@@ -1,59 +1,67 @@
 import pandas as pd
+import numpy as np
+from typing import Union
 # from sklearn.preprocessing import KBinsDiscretizer
 
-
-def discretize_series(input, bins=None, labels=None):
+def discretize(a: np.array, 
+               bins: Union[list, tuple], 
+               labels: Union[None, list, tuple]=None,
+               right=False) -> np.array:
     """
-
-    :type input: pd.Series
-    :type n_bins: int
-    :return: pd.Series
+    discretize a numpy array into bins
+    if labels is given then apply those lables
     """
+    if labels == None:
+        if right is False:
+            labels = bins[:-1]
+        else:
+            labels = bins[1:]
 
-    if bins is None:
-        bins = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1]
+    assert len(bins) - 1 == len(labels)
 
-    return pd.cut(input, bins, labels=labels)
+    bins_by_labels = dict(zip(range(1,len(bins)+1), labels))
+    digitized = np.digitize(a, bins=bins, right=right)
+    res = np.empty((0))
 
+    for v in digitized:
+        for b, l in bins_by_labels.items():
+            if v == b:
+                res = np.append(res, [l])
+                    
+    return res
 
-def discretize_series_sklearn(input, bins=None, labels=None):
-    """
-
-    :type input: pd.Series
-    :type n_bins: int
-    :return: pd.Series
-    """
-
-    if bins is None:
-        bins = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1]
-
-    return pd.cut(input, bins, labels=labels)
-
-
-def min_max(s):
+def min_max(a: np.array) -> np.array:
     """
     get the mean of this window len(v) and compare it to current price
-    :type v: pd.Series
-    :rtype: np.float64
     """
     # x = ((s - s.min()) / (s.max() - s.min())).iat[-1]
     # return x * 2 - 1
-    return ((s - s.min()) / (s.max() - s.min())).iat[-1]
+    return (a - a.min()) / (a.max() - a.min())
 
 
-def min_max_unsigned(s):
+def min_max_v(a: np.array) -> np.float:
     """
     get the mean of this window len(v) and compare it to current price
-    :type v: pd.Series
-    :rtype: np.float64
     """
-    # factor in the trend
-    return ((s - s.min()) / (s.max() - s.min())).iat[-1]
+    return min_max(a)[-1]
 
 
-def zscore(v):
-    cmp = (v - v.mean()) / v.std(ddof=0)
+def zscore(a: np.array) -> np.array:
+    """
+    get an array of zscores for a given np.array
+    """
+    return (a - a.mean()) / a.std(ddof=0)
+
+
+def zscore_v(a: np.array) -> np.float:
+    """
+    get the last zscore value for an np.array
+    """
+    cmp = (a - a.mean()) / a.std(divmod)
     return cmp.iat[-1]
 
+
+def log_v(v: np.array):
+    return np.log(v)[-1]
 
 
