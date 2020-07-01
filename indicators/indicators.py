@@ -169,6 +169,23 @@ def eom(volume: np.array,
     return np.concatenate(([np.nan], sma((q + v)/2, smoothing)))
 
 
+def eome(volume: np.array,
+        close: np.array,
+        min_max_period=200,
+        smoothing=6) -> np.array:
+    """
+    Ease Of Movement Exponential
+    same as ease of movement  but with exponetial moving average
+    """
+    assert len(volume) == len(close)
+
+    o = np.delete(close, -1)  # remove last value (shift values backwards)
+    # q is the inverse of the min-maxed bar size
+    q = rolling_min_max(np.absolute((close[1:]- o)), min_max_period, True)
+    v = (rolling_min_max(volume[1:], min_max_period, True) * -1.) + 1.
+    return np.concatenate(([np.nan], ema((q + v)/2, smoothing)))
+
+
 def eomcd(volume, close, min_max_period=200, fast=3, slow=6) -> np.array:
     """
     Ease Of Movement convergence divergence
@@ -278,7 +295,7 @@ def lin_slope(s: np.array) -> np.float:
     """
     linear regression slope
     """
-    x = np.array(range(0,len(a))).reshape(-1, 1)
+    x = np.array(range(0,len(s))).reshape(-1, 1)
     y = s.reshape(-1, 1)
     lr = LinearRegression()
     lr.fit(x, y)
@@ -472,4 +489,9 @@ def rolling_min_max(a: np.array, window: int, pad=False) -> np.array:
 
 
 def ema_sma_cd(a: np.array, period:int) -> np.array:
-    return ema(a) - sma(a)
+    return ema(a, period) - sma(a, period)
+
+
+def delta(a: np.array) -> np.array:
+    b = np.delete(a, 0)
+    return np.concatenate(([np.nan], b - a[:-1]))
