@@ -194,7 +194,7 @@ def eomcd(volume, close, min_max_period=200, fast=3, slow=6) -> np.array:
         eom(volume, close, min_max_period, slow)
 
 
-def pfc(a: np.array, look_ahead=24) -> np.array:
+def pfc(a: np.array, look_ahead=6) -> np.array:
     """
     precent future change
     """
@@ -203,16 +203,16 @@ def pfc(a: np.array, look_ahead=24) -> np.array:
     for i in range(0, len(a)):
         base = a[i]
         fi = i + look_ahead + 1  # future index
-        if fi in a.index:
+        if fi < len(a):
             # loop over values in future index
             min_c = (a[i + 1:fi].min() - base) / abs(base)
             max_c = (a[i + 1:fi].max() - base) / abs(base)
 
             if min_c < 0 and abs(min_c) > max_c:
-                a.at[i] = min_c
+                fc[i] = min_c
             else:
-                a.at[i] = max_c
-    return a
+                fc[i] = max_c
+    return fc
 
 
 def best_fit_poly_fn(max_degrees=6, predict=1) -> Callable:
@@ -495,3 +495,7 @@ def ema_sma_cd(a: np.array, period:int) -> np.array:
 def delta(a: np.array) -> np.array:
     b = np.delete(a, 0)
     return np.concatenate(([np.nan], b - a[:-1]))
+
+def avg_delta(a: np.array) -> np.array:
+    b = np.delete(a, 0)
+    np.concatenate(([np.nan], b - a[:-1]))
