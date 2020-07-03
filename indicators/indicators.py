@@ -215,6 +215,26 @@ def pfc(a: np.array, look_ahead=6) -> np.array:
     return fc
 
 
+def apfc(a: np.array, look_ahead=6, avg_period=3) -> np.array:
+    """
+    average precent future change
+    """
+    fc = np.empty(len(a))
+    fc[:] = np.nan
+    for i in range(0, len(a)):
+        base = a[i]
+        fi = i + look_ahead + 1  # future index
+        if fi < len(a):
+            # loop over values in future index
+            min_c = (a[i + 1:fi].min() - base) / abs(base)
+            max_c = (a[i + 1:fi].max() - base) / abs(base)
+            if min_c < 0 and abs(min_c) > max_c:
+                fc[i] = min_c
+            else:
+                fc[i] = max_c
+    return sma(fc, avg_period)
+
+
 def best_fit_poly_fn(max_degrees=6, predict=1) -> Callable:
     """
     create a func that will get the best fit polynomial regression fit
@@ -496,6 +516,3 @@ def delta(a: np.array) -> np.array:
     b = np.delete(a, 0)
     return np.concatenate(([np.nan], b - a[:-1]))
 
-def avg_delta(a: np.array) -> np.array:
-    b = np.delete(a, 0)
-    np.concatenate(([np.nan], b - a[:-1]))
