@@ -12,15 +12,12 @@ def discretize(a: np.array,
     if labels is given then apply those lables
     """
     if labels == None:
-        if right is False:
-            labels = bins[:-1]
-        else:
-            labels = bins[1:]
+        labels = bins
 
-    assert len(bins) - 1 == len(labels)
+    assert len(bins)== len(labels)
 
-    bins_by_labels = dict(zip(range(1,len(bins)+1), labels))
-    digitized = np.digitize(a, bins=bins, right=right)
+    bins_by_labels = dict(zip(range(0,len(bins)), labels))
+    digitized = np.digitize(np.nan_to_num(a, nan=.0), bins=bins, right=right)
     res = np.empty((0))
 
     for v in digitized:
