@@ -50,6 +50,13 @@ def zscore(a: np.array) -> np.array:
     return (a - a.mean()) / a.std(ddof=0)
 
 
+def abs_mean(a: np.array) -> np.array:
+    """
+    get an array of zscores for a given np.array
+    """
+    return (a - a.mean()) / a.std(ddof=0)
+
+
 def zscore_v(a: np.array) -> np.float:
     """
     get the last zscore value for an np.array
