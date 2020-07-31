@@ -89,7 +89,6 @@ class Indicator:
     def to_frame(self, *args, **kwargs) -> pd.DataFrame:
         """ returns a pandas dataframe with columns equal to the output columns """
         outputs = self._exec(*args, **kwargs)
-        assert len(outputs) == len(self.__outputs)
 
         df_kwargs = {
             "index": None,
@@ -107,7 +106,7 @@ class Indicator:
             df[df.columns[i]] = outputs[i]
         return df
 
-    def dfcat(self, frame: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
+    def concat(self, frame: pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
         df = self.to_frame(*args, **kwargs)
 
         concat_kwargs = {
@@ -141,11 +140,14 @@ def mid(a: np.array, b: np.array) -> np.array:
 
 
 class Mid(Indicator):
+    """
+    Mid value between 2 series
+    """
     def __init__(self, name=None):
         super(Mid, self).__init__(name=name)
 
-    def _exec(self, a: np.array, b: np.array):
-        return mid(a, b)
+    def _exec(self, a: np.array, b: np.array) -> Tuple[np.array]:
+        return mid(a, b),
 
 
 def adosc(high: Union[np.array, pd.Series],
@@ -308,7 +310,7 @@ def sar(high: Union[np.array, pd.Series],
     """
     Parabolic SAR
     """
-    return abstract.SAR(high, low, acceleration, maximum)
+    return np.array(abstract.SAR(high, low, acceleration, maximum))
 
 
 class SAR(Indicator):
@@ -351,7 +353,7 @@ class BBANDS(Indicator):
         ]
         super(BBANDS, self).__init__(params, outputs, name)
 
-    def _exec(self, series: Union[np.array, pd.Series]) -> Tuple[np.array]:
+    def _exec(self, series: Union[np.array, pd.Series]) -> Tuple[np.array, np.array, np.array]:
         return bbands(series, self.p_val("p"), self.p_val("d"))
 
 
@@ -1465,7 +1467,7 @@ class OBV(Indicator):
         return obv(close, volume),
 
 
-class CNDL(Indicator):
+class CandlePatterns(Indicator):
     """
     Candle Pattern Recognition
     https://mrjbq7.github.io/ta-lib/func_groups/pattern_recognition.html
@@ -1542,7 +1544,7 @@ class CNDL(Indicator):
         else:
             output = default_outputs
 
-        super(CNDL, self).__init__(outputs=output, name=name)
+        super(CandlePatterns, self).__init__(outputs=output, name=name)
 
     def _exec(self,
               open: Union[np.array, pd.Series],
@@ -1624,7 +1626,7 @@ class GreaterThan(Indicator):
         super(GreaterThan, self).__init__(name=name)
 
     def _exec(self, a: np.array, b: np.array) -> Tuple[np.array]:
-        return (a > b).astype(int)
+        return (a > b).astype(int),
 
 
 class LessThan(Indicator):
@@ -1637,5 +1639,96 @@ class LessThan(Indicator):
         super(LessThan, self).__init__(name=name)
 
     def _exec(self, a: np.array, b: np.array) -> Tuple[np.array]:
-        return (a < b).astype(int)
+        return (a < b).astype(int),
 
+
+class Diff(Indicator):
+    """
+    Returns difference between two series
+    """
+
+    def __init__(self, name: str):
+        assert name != ""
+        super(Diff, self).__init__(name=name)
+
+    def _exec(self, a: np.array, b: np.array) -> Tuple[np.array]:
+        return a - b,
+
+
+class Increasing(Indicator):
+    """
+    Returns an array of ints where value at x = 1 if value at x is greater than value at x-1
+    """
+
+    def __init__(self, name: str, pad_val: np.nan):
+        assert name != ""
+        self.p_val = pad_val
+        super(Increasing, self).__init__(name=name)
+
+    def _exec(self, v: np.array) -> Tuple[np.array]:
+        diff = (v[1:] > v[:-1]).astype(np.int)
+        if self.p_val is not None:
+            pad = np.empty(1)
+            pad[:] = self.p_val
+            diff = np.concatenate(pad, diff)
+        return diff,
+
+
+class Decreasing(Indicator):
+    """
+    Returns an array of ints where value at x = 1 if value at x is less than value at x-1
+    """
+
+    def __init__(self, name: str, pad_val=np.nan):
+        assert name != ""
+        self.p_val = pad_val
+        super(Decreasing, self).__init__(name=name)
+
+    def _exec(self, v: np.array) -> Tuple[np.array]:
+        diff = (v[:-1] > v[1:]).astype(np.int)
+        if self.p_val is not None:
+            pad = np.empty(1)
+            pad[:] = self.p_val
+            diff = np.concatenate(pad, diff)
+        return diff,
+
+
+class Compare(Indicator):
+    """
+    Returns an array of ints where value at x = 1 if comparison(a,b) is true
+    """
+
+    def __init__(self, name: str, comparison=">"):
+        assert name != ""
+        assert comparison in [">", ">=", "=", "<", "<=", "!="]
+        self.comparison = comparison
+        super(Compare, self).__init__(name=name)
+
+    def _exec(self, a: np.array, b: np.array) -> Tuple[np.array]:
+        if self.comparison == ">=":
+            x = a >= b
+        elif self.comparison == ">":
+            x = a > b
+        elif self.comparison == "=":
+            x = a == b
+        elif self.comparison == "<":
+            x = a < b
+        elif self.comparison == "<=":
+            x = a <= b
+        elif self.comparison == "!=":
+            x = a != b
+        return x.astype(np.int),
+
+
+class Custom(Indicator):
+    """
+    Indicator that uses a custom function
+    """
+
+    def __init__(self, name: str, func: Callable):
+        assert name != ""
+        self.f = func
+        super(Custom, self).__init__(name=name)
+
+    def _exec(self, *args):
+        return self.f(*args)
