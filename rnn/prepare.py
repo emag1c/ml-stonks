@@ -1,75 +1,14 @@
 import os
 import sys
 import pandas as pd
-import numpy as np
-from matplotlib import pyplot as plt
-# import mplfinance as mpf
-import yfinance as yf
-from talib import abstract
 # add base to the modules
 from indicators import indicators as ind
-from indicators import normalize as nor
 from matplotlib import pyplot as plt
-import math
-import pathlib
 from typing import Dict, List, Tuple, Union
 import mplfinance as mpf
-
-from datetime import datetime
-# module_path = os.path.abspath(os.path.join('..'))
-# if module_path not in sys.path:
-#     sys.path.append(module_path)
-from GoogleNews import GoogleNews
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
-
-analyzer = SentimentIntensityAnalyzer()
-gn = GoogleNews()
-gn.setlang('en')
-gn.setperiod('d')
-
-NEWS_TERMS = ["yahoo finance", "seeking alpha", "thestreet", "bloomberg", "marketwatch", "Motley", "Zacks"]
-
-
-def get_google_news_scores(sym: str, date: datetime) -> Dict[str, float]:
-    date_str = date.strftime("%m/%d/%Y")
-    gn.setTimeRange(date_str, date_str)
-    gn.search(sym)
-    results: list = gn.result()
-    gn.clear()
-    for ext in NEWS_TERMS:
-        gn.search(sym + ext)
-        results.extend(gn.result())
-        gn.clear()
-    text = ""
-    for r in results:
-        text += r['title'] + ' ' + r['desc']
-    scores = analyzer.polarity_scores(text)
-    return scores
-
-
-def load_ticker(sym, period="5y", interval="1d") -> pd.DataFrame:
-    ydf = yf.Ticker(sym).history(period, interval).reset_index()
-    scores = pd.DataFrame(index=ydf.index, columns=["news_neg", "news_neu", "news_pos", "news_cmp"])
-    for idx, date in ydf["Date"].items():
-        dt = date.to_pydatetime()
-        gn_scores = get_google_news_scores(sym, date.to_pydatetime())
-        print(f"Loaded news scoring for {sym} on {dt}: {gn_scores['compound']}")
-        scores.loc[idx] = [gn_scores["neg"], gn_scores["neu"], gn_scores["pos"], gn_scores["compound"]]
-    return pd.concat((ydf, scores), axis=1)
-
-
-def load_tickers(symbols: list, period="5y", interval="1d") -> Dict[str, pd.DataFrame]:
-    frames: Dict[str, pd.DataFrame] = {}
-    for sym in symbols:
-        frames[sym] = load_ticker(sym, period, interval)
-    return frames
-
-
-def plot_tickers(frames: Dict[str, pd.DataFrame], figsize=(18, 6)):
-    for symbol, df in frames.items():
-        plt.figure(figsize=figsize)
-        df["Close"].plot(title=f"{symbol} Close")
-    plt.show()
+module_path = os.path.abspath(os.path.join('..'))
+if module_path not in sys.path:
+    sys.path.append(module_path)
 
 
 def add_indicators(df: pd.DataFrame) -> Tuple[Dict[str, List[ind.Indicator]], pd.DataFrame]:
@@ -195,7 +134,8 @@ if __name__ == '__main__':
     interval = '1d'
 
     for sym in symbols:
-        df = load_ticker(sym, period, interval)
-        plot_ticker(df)
+        # todo: load from disk
+        # df = load_ticker(sym, period, interval)
+        # plot_ticker(df)
 
 
