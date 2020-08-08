@@ -18,7 +18,8 @@ import argparse
 
 analyzer = SentimentIntensityAnalyzer()
 
-NEWS_TERMS = ["etf -guru"]
+NEWS_TERMS = ["etf OR stock OR finance OR forecast -guru"]
+# NEWS_TERMS = ["stock -guru", "etf -guru", "finance -guru"]
 PROXY_API_KEY = ""
 
 
@@ -32,7 +33,7 @@ def get_google_news_scores(sym: str, date: datetime, pages=1) -> Dict[str, float
 
     queries = []
     for ext in NEWS_TERMS:
-        queries.append(sym + " " + ext)
+        queries.append("*" + sym + " " + ext)
 
     try:
         gn.search(queries, list(range(1, pages)), start=date, end=date)

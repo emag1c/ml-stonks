@@ -1,6 +1,6 @@
 from urllib import parse
 from bs4 import BeautifulSoup as Soup
-from time import time
+from time import time, sleep
 from typing import Union, List
 from datetime import datetime
 from scraper_api import ScraperAPIClient
@@ -21,6 +21,7 @@ class GoogleNews:
         self.client = ScraperAPIClient(key)
         self.user_agent = ua
         self.__texts = []
+        self.__titles = []
         self.__links = []
         self.__results = []
         self.__lang = lang
@@ -48,15 +49,16 @@ class GoogleNews:
         for query in q:
             for page in p:
                 out = self.scrape_page(query, page, start, end)
-                self.__results.extend(out)
                 for o in out:
-                    self.__links.append(o["link"])
-                    self.__texts.append(o["title"] + " " + o["desc"])
+                    if o["title"] not in self.__titles:
+                        self.__results.append(o)
+                        self.__links.append(o["link"])
+                        self.__texts.append(o["title"] + " " + o["desc"])
 
         self.__exec_time = time() - start_time
         return self.__results
 
-    def scrape_page(self, q: str, page: int, start: datetime, end: datetime):
+    def scrape_page(self, q: str, page: int, start: datetime, end: datetime, attempts=0):
         """
         page = number of the page to be retrieved
         """
@@ -78,8 +80,12 @@ class GoogleNews:
             page = self.client.get(url=GOOG_URL + "?" + parse.urlencode(payload)).text
             content = Soup(page, "html.parser")
         except Exception as e:
-            print(f"ERROR TRYING TO LOAD CONTENT: {e}")
-            raise e
+            attempts += 1
+            if attempts > 5:
+                print(f"ERROR TRYING TO LOAD CONTENT: {e}")
+                raise e
+            sleep(0.1 * attempts)
+            self.scrape_page(q, page, start, end, attempts)
         try:
             result = content.find_all("div", id="search")[0].find_all("g-card")
         except IndexError:
@@ -116,4 +122,5 @@ class GoogleNews:
         self.__texts = []
         self.__links = []
         self.__results = []
+        self.__titles = []
         self.__exec_time = 0
